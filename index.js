@@ -10,4 +10,4 @@ client.once('ready', () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
-client.login(process.env.MTQ3ODExNDQyODU0NDM1NjU5Mw.Gt8Eqm.eimZJRVkl28ZCsEabhDNQQvb3gysYO9MVszLA4);
+cclient.login(process.env.TOKEN);
