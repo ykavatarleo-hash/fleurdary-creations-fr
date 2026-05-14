@@ -12,16 +12,29 @@ const {
 
 const http = require('http');
 
-// ✅ Keep server alive (important for hosting platforms)
+// ✅ Create server
+const PORT = process.env.PORT || 3000;
+
 http.createServer((req, res) => {
   res.end('Bot is alive!');
-}).listen(process.env.PORT || 3000);
+}).listen(PORT, () => {
+  console.log(`🌐 Server running on port ${PORT}`);
+});
+
+// ✅ 🔁 SELF-PING (keeps app active)
+setInterval(() => {
+  http.get(`http://localhost:${PORT}`, (res) => {
+    console.log(`🔁 Self ping: ${res.statusCode}`);
+  }).on('error', (err) => {
+    console.error('Self ping failed:', err.message);
+  });
+}, 60 * 1000); // every 60 seconds
 
 // ✅ Catch hidden errors
 process.on('unhandledRejection', console.error);
 process.on('uncaughtException', console.error);
 
-// ✅ Create client
+// ✅ Create Discord client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -29,8 +42,8 @@ const client = new Client({
   ]
 });
 
-// ✅ FIXED: correct event name
-client.once('ready', () => {
+// ✅ Correct event for your version
+client.once('clientReady', () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   client.user.setActivity('fleurdary creations', {
     type: ActivityType.Watching
@@ -71,5 +84,5 @@ client.on('guildMemberAdd', async (member) => {
   });
 });
 
-// ✅ Make sure this matches your env variable name in Remoud
+// ✅ Login
 client.login(process.env.TOKEN);
