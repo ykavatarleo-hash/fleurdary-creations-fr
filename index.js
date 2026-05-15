@@ -13,7 +13,10 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
-  ActivityType
+  ActivityType,
+  REST,
+  Routes,
+  SlashCommandBuilder
 } = require('discord.js');
 
 const http = require('http');
@@ -41,13 +44,13 @@ const client = new Client({
 });
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
+const GUILD_ID              = '1477307154208657520';
 const STAFF_ROLE_ID         = '1477310216067354686';
 const TICKET_CATEGORY_ID    = '1477312028560592977';
 const TRANSCRIPT_CHANNEL_ID = '1477314168901079300';
 const TICKET_PANEL_CHANNEL  = '1490651260481704066';
 const COLOR                 = 0x6cc5ff;
 
-// Ticket types that skip the form
 const NO_FORM_TYPES = ['partnership'];
 
 // ─── TICKET DROPDOWN OPTIONS ──────────────────────────────────────────────────
@@ -78,12 +81,33 @@ const ticketOptions = [
   }
 ];
 
-// ─── BOT READY ────────────────────────────────────────────────────────────────
-client.once('clientReady', () => {
+// ─── BOT READY + REGISTER SLASH COMMANDS ─────────────────────────────────────
+client.once('clientReady', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
+
   client.user.setActivity('fleurdary creations', {
     type: ActivityType.Watching
   });
+
+  // Register /sendpanel to your server instantly
+  const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+
+  const commands = [
+    new SlashCommandBuilder()
+      .setName('sendpanel')
+      .setDescription('Send the ticket panel (admin only)')
+      .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
+  ].map(cmd => cmd.toJSON());
+
+  try {
+    await rest.put(
+      Routes.applicationGuildCommands(client.user.id, GUILD_ID),
+      { body: commands }
+    );
+    console.log('✅ Slash commands registered to guild.');
+  } catch (err) {
+    console.error('Failed to register slash commands:', err);
+  }
 });
 
 // ─── WELCOME MESSAGE ──────────────────────────────────────────────────────────
@@ -116,12 +140,13 @@ client.on('guildMemberAdd', async (member) => {
   await channel.send({ embeds: [embed], components: [row] });
 });
 
-// ─── SEND TICKET PANEL ────────────────────────────────────────────────────────
-// Type !sendpanel in any channel (admin only) to post the ticket panel
-client.on('messageCreate', async (message) => {
-  if (message.content === '!sendpanel' && message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
-    const channel = message.guild.channels.cache.get(TICKET_PANEL_CHANNEL);
-    if (!channel) return message.reply('Panel channel not found.');
+// ─── INTERACTIONS ─────────────────────────────────────────────────────────────
+client.on('interactionCreate', async (interaction) => {
+
+  // ── /sendpanel slash command ──
+  if (interaction.isChatInputCommand() && interaction.commandName === 'sendpanel') {
+    const channel = interaction.guild.channels.cache.get(TICKET_PANEL_CHANNEL);
+    if (!channel) return interaction.reply({ content: 'Panel channel not found.', ephemeral: true });
 
     const embed = new EmbedBuilder()
       .setColor(COLOR)
@@ -146,12 +171,8 @@ client.on('messageCreate', async (message) => {
     const row = new ActionRowBuilder().addComponents(menu);
 
     await channel.send({ embeds: [embed], components: [row] });
-    message.delete().catch(() => {});
+    await interaction.reply({ content: '<:whitetick:1477663337847324916> Panel sent!', ephemeral: true });
   }
-});
-
-// ─── INTERACTIONS ─────────────────────────────────────────────────────────────
-client.on('interactionCreate', async (interaction) => {
 
   // ── Dropdown selected ──
   if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_select') {
