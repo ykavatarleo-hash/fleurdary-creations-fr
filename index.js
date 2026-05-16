@@ -19,16 +19,6 @@ const {
   SlashCommandBuilder
 } = require('discord.js');
 
-const http = require('http');
-
-// ✅ Keep-alive server
-const PORT = process.env.PORT || 3000;
-http.createServer((req, res) => {
-  res.end('Bot is alive!');
-}).listen(PORT, () => {
-  console.log(`🌐 Server running on port ${PORT}`);
-});
-
 // ✅ Catch hidden errors
 process.on('unhandledRejection', console.error);
 process.on('uncaughtException', console.error);
@@ -89,7 +79,6 @@ client.once('clientReady', async () => {
     type: ActivityType.Watching
   });
 
-  // Register /sendpanel to your server instantly
   const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
   const commands = [
